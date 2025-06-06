@@ -76,10 +76,18 @@ export const createPowerPlant = async (
     retirement_year: number;
   }
 ) => {
-  const response = await api.post(`/game-sessions/${gameId}/plants`, plant, {
-    params: { utility_id: utilityId }
-  });
-  return response.data as PowerPlant;
+  console.log('createPowerPlant called with:', { gameId, utilityId, plant });
+  
+  try {
+    const response = await api.post(`/game-sessions/${gameId}/plants`, plant, {
+      params: { utility_id: utilityId }
+    });
+    console.log('createPowerPlant response:', response.data);
+    return response.data as PowerPlant;
+  } catch (error) {
+    console.error('Error in createPowerPlant:', error);
+    throw error;
+  }
 };
 
 export const getPowerPlants = async (gameId: string, utilityId?: string) => {

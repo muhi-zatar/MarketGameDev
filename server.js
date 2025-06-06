@@ -379,6 +379,133 @@ app.post('/game-sessions/:sessionId/bids', (req, res) => {
   });
 });
 
+// Create power plant - FIXED
+app.post('/game-sessions/:sessionId/plants', (req, res) => {
+  console.log('Creating new plant:', req.body);
+  console.log('Utility ID:', req.query.utility_id);
+  console.log('Game Session ID:', req.params.sessionId);
+  
+  const plant = req.body;
+  
+  // Make sure all required fields are present
+  if (!plant.name || !plant.plant_type || !plant.capacity_mw || 
+      !plant.construction_start_year || !plant.commissioning_year || !plant.retirement_year) {
+    console.error('Missing required plant data:', plant);
+    return res.status(400).json({
+      error: 'Missing required plant data',
+      requiredFields: [
+        'name', 'plant_type', 'capacity_mw', 
+        'construction_start_year', 'commissioning_year', 'retirement_year'
+      ]
+    });
+  }
+  
+  // Calculate costs based on plant type
+  let overnightCostPerKw = 0;
+  let fixedOmPerKwYear = 0;
+  let variableOmPerMwh = 0;
+  let capacityFactor = 0;
+  let heatRate = null;
+  let fuelType = null;
+  
+  switch(plant.plant_type) {
+    case 'coal':
+      overnightCostPerKw = 4500;
+      fixedOmPerKwYear = 45;
+      variableOmPerMwh = 4.5;
+      capacityFactor = 0.85;
+      heatRate = 8800;
+      fuelType = 'coal';
+      break;
+    case 'natural_gas_cc':
+      overnightCostPerKw = 1200;
+      fixedOmPerKwYear = 15;
+      variableOmPerMwh = 3.0;
+      capacityFactor = 0.87;
+      heatRate = 6400;
+      fuelType = 'natural_gas';
+      break;
+    case 'natural_gas_ct':
+      overnightCostPerKw = 800;
+      fixedOmPerKwYear = 12;
+      variableOmPerMwh = 8.0;
+      capacityFactor = 0.15;
+      heatRate = 10500;
+      fuelType = 'natural_gas';
+      break;
+    case 'nuclear':
+      overnightCostPerKw = 8500;
+      fixedOmPerKwYear = 95;
+      variableOmPerMwh = 2.0;
+      capacityFactor = 0.92;
+      heatRate = 10400;
+      fuelType = 'uranium';
+      break;
+    case 'solar':
+      overnightCostPerKw = 1400;
+      fixedOmPerKwYear = 18;
+      variableOmPerMwh = 0.0;
+      capacityFactor = 0.27;
+      break;
+    case 'wind_onshore':
+      overnightCostPerKw = 1650;
+      fixedOmPerKwYear = 28;
+      variableOmPerMwh = 0.0;
+      capacityFactor = 0.35;
+      break;
+    case 'wind_offshore':
+      overnightCostPerKw = 4200;
+      fixedOmPerKwYear = 80;
+      variableOmPerMwh = 0.0;
+      capacityFactor = 0.45;
+      break;
+    case 'battery':
+      overnightCostPerKw = 1500;
+      fixedOmPerKwYear = 25;
+      variableOmPerMwh = 2.0;
+      capacityFactor = 0.85;
+      break;
+    default:
+      overnightCostPerKw = 2000; // default fallback
+      fixedOmPerKwYear = 30;
+      variableOmPerMwh = 3.0;
+      capacityFactor = 0.5;
+  }
+  
+  // Calculate total costs
+  const capacityKw = plant.capacity_mw * 1000;
+  const capitalCostTotal = capacityKw * overnightCostPerKw;
+  const fixedOmAnnual = capacityKw * fixedOmPerKwYear;
+  
+  // Determine initial status based on commissioning year
+  const status = plant.commissioning_year <= 2025 ? "operating" : "under_construction";
+  
+  // Generate a unique ID based on plant name
+  const id = `plant_${plant.name.toLowerCase().replace(/\s+/g, '_')}_${Date.now()}`;
+  
+  const newPlant = {
+    "id": id,
+    "utility_id": req.query.utility_id,
+    "game_session_id": req.params.sessionId,
+    "name": plant.name,
+    "plant_type": plant.plant_type,
+    "capacity_mw": plant.capacity_mw,
+    "construction_start_year": plant.construction_start_year,
+    "commissioning_year": plant.commissioning_year,
+    "retirement_year": plant.retirement_year,
+    "status": status,
+    "capital_cost_total": capitalCostTotal,
+    "fixed_om_annual": fixedOmAnnual,
+    "variable_om_per_mwh": variableOmPerMwh,
+    "capacity_factor": capacityFactor,
+    "heat_rate": heatRate,
+    "fuel_type": fuelType
+  };
+  
+  console.log('Created new plant:', newPlant);
+  res.json(newPlant);
+});
+
 // Market results
 app.get('/game-sessions/:sessionId/market-results', (req, res) => {
   res.json([]);
@@ -473,29 +600,6 @@ app.get('/game-sessions/:sessionId/multi-year-analysis', (req, res) => {
     "trends": {},
     "market_events": [],
     "analysis_period": "N/A - No historical data yet"
-  });
-});
-
-// Create power plant
-app.post('/game-sessions/:sessionId/plants', (req, res) => {
-  const plant = req.body;
-  res.json({
-    "id": `plant_${Date.now()}`,
-    "utility_id": req.query.utility_id,
-    "game_session_id": req.params.sessionId,
-    "name": plant.name,
-    "plant_type": plant.plant_type,
-    "capacity_mw": plant.capacity_mw,
-    "construction_start_year": plant.construction_start_year,
-    "commissioning_year": plant.commissioning_year,
-    "retirement_year": plant.retirement_year,
-    "status": "planned",
-    "capital_cost_total": plant.capacity_mw * 1000 * (plant.plant_type === "coal" ? 4500 : 1400),
-    "fixed_om_annual": plant.capacity_mw * 1000 * (plant.plant_type === "coal" ? 45 : 18),
-    "variable_om_per_mwh": plant.plant_type === "coal" ? 4.5 : 0.0,
-    "capacity_factor": plant.plant_type === "coal" ? 0.85 : 0.27,
-    "heat_rate": plant.plant_type === "coal" ? 8800 : null,
-    "fuel_type": plant.plant_type === "coal" ? "coal" : null
   });
 });
 

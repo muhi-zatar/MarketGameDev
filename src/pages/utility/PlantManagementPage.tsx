@@ -67,6 +67,15 @@ export default function PlantManagementPage() {
 
   const handleOpenNewPlantModal = () => {
     setIsNewPlantModalOpen(true);
+    // Reset form when opening modal
+    setNewPlant({
+      name: '',
+      plantType: '',
+      capacityMw: 100,
+      constructionStartYear: new Date().getFullYear(),
+      commissioning: 0,
+      retirement: 0,
+    });
   };
 
   const handlePlantTypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -96,9 +105,32 @@ export default function PlantManagementPage() {
   const handleCreatePlant = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!gameId || !user || !newPlant.plantType) return;
+    if (!gameId || !user || !newPlant.plantType) {
+      toast.error('Missing required information');
+      return;
+    }
+    
+    // Validate form
+    if (!newPlant.name.trim()) {
+      toast.error('Plant name is required');
+      return;
+    }
+    
+    if (newPlant.capacityMw <= 0) {
+      toast.error('Capacity must be greater than zero');
+      return;
+    }
     
     try {
+      console.log("Creating plant with data:", {
+        name: newPlant.name,
+        plant_type: newPlant.plantType,
+        capacity_mw: newPlant.capacityMw,
+        construction_start_year: newPlant.constructionStartYear,
+        commissioning_year: newPlant.commissioning,
+        retirement_year: newPlant.retirement
+      });
+      
       const plantData = {
         name: newPlant.name,
         plant_type: newPlant.plantType,
@@ -109,6 +141,7 @@ export default function PlantManagementPage() {
       };
       
       const response = await createPowerPlant(gameId, user.id, plantData);
+      console.log("Plant creation response:", response);
       
       toast.success(`Successfully created ${newPlant.name}`);
       setIsNewPlantModalOpen(false);
@@ -161,8 +194,8 @@ export default function PlantManagementPage() {
     return (
       <AppLayout>
         <div className="flex justify-center items-center h-64">
-          <svg className="animate-spin h-8 w-8 text-primary-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+          <svg className="animate-spin h-8 w-8 text-primary-600\" xmlns="http://www.w3.org/2000/svg\" fill="none\" viewBox="0 0 24 24">
+            <circle className="opacity-25\" cx="12\" cy="12\" r="10\" stroke="currentColor\" strokeWidth="4"></circle>
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
           </svg>
         </div>
@@ -353,161 +386,162 @@ export default function PlantManagementPage() {
             <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
 
             <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
-              <div className="px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-                <div className="sm:flex sm:items-start">
-                  <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
-                    <Dialog.Title as="h3" className="text-lg leading-6 font-medium text-gray-900">
-                      Build New Power Plant
-                    </Dialog.Title>
-                    <div className="mt-4">
-                      <form onSubmit={handleCreatePlant} className="space-y-4">
-                        <div>
-                          <label htmlFor="plantName" className="block text-sm font-medium text-gray-700">
-                            Plant Name
-                          </label>
-                          <input
-                            type="text"
-                            id="plantName"
-                            value={newPlant.name}
-                            onChange={(e) => setNewPlant({...newPlant, name: e.target.value})}
-                            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
-                            placeholder="e.g., Coastal Wind Farm"
-                            required
-                          />
-                        </div>
-
-                        <div>
-                          <label htmlFor="plantType" className="block text-sm font-medium text-gray-700">
-                            Plant Type
-                          </label>
-                          <select
-                            id="plantType"
-                            value={newPlant.plantType}
-                            onChange={handlePlantTypeChange}
-                            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
-                            required
-                          >
-                            <option value="">Select plant type...</option>
-                            {plantTemplates.map(template => (
-                              <option key={template.plant_type} value={template.plant_type}>
-                                {template.name} ({formatConstructionTime(template.construction_time_years)})
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-
-                        <div>
-                          <label htmlFor="capacity" className="block text-sm font-medium text-gray-700">
-                            Capacity (MW)
-                          </label>
-                          <input
-                            type="number"
-                            id="capacity"
-                            value={newPlant.capacityMw}
-                            onChange={(e) => setNewPlant({...newPlant, capacityMw: parseInt(e.target.value)})}
-                            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
-                            min="1"
-                            max="2000"
-                            required
-                          />
-                        </div>
-
-                        <div className="grid grid-cols-3 gap-4">
+              <form onSubmit={handleCreatePlant}>
+                <div className="px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                  <div className="sm:flex sm:items-start">
+                    <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
+                      <Dialog.Title as="h3" className="text-lg leading-6 font-medium text-gray-900">
+                        Build New Power Plant
+                      </Dialog.Title>
+                      <div className="mt-4">
+                        <div className="space-y-4">
                           <div>
-                            <label htmlFor="constructionStart" className="block text-sm font-medium text-gray-700">
-                              Construction
+                            <label htmlFor="plantName" className="block text-sm font-medium text-gray-700">
+                              Plant Name
                             </label>
                             <input
-                              type="number"
-                              id="constructionStart"
-                              value={newPlant.constructionStartYear}
-                              onChange={(e) => setNewPlant({...newPlant, constructionStartYear: parseInt(e.target.value)})}
+                              type="text"
+                              id="plantName"
+                              value={newPlant.name}
+                              onChange={(e) => setNewPlant({...newPlant, name: e.target.value})}
                               className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
-                              min="2020"
+                              placeholder="e.g., Coastal Wind Farm"
                               required
                             />
                           </div>
-                          <div>
-                            <label htmlFor="commissioning" className="block text-sm font-medium text-gray-700">
-                              Commission
-                            </label>
-                            <input
-                              type="number"
-                              id="commissioning"
-                              value={newPlant.commissioning}
-                              onChange={(e) => setNewPlant({...newPlant, commissioning: parseInt(e.target.value)})}
-                              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
-                              required
-                            />
-                          </div>
-                          <div>
-                            <label htmlFor="retirement" className="block text-sm font-medium text-gray-700">
-                              Retirement
-                            </label>
-                            <input
-                              type="number"
-                              id="retirement"
-                              value={newPlant.retirement}
-                              onChange={(e) => setNewPlant({...newPlant, retirement: parseInt(e.target.value)})}
-                              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
-                              required
-                            />
-                          </div>
-                        </div>
 
-                        {newPlant.plantType && plantTemplates.find(t => t.plant_type === newPlant.plantType) && (
-                          <div className="mt-2 p-3 bg-gray-50 rounded-lg text-sm">
-                            <h4 className="font-medium text-gray-900 mb-1">Plant Economics:</h4>
-                            <div className="grid grid-cols-2 gap-x-4 gap-y-1">
-                              <div className="flex justify-between">
-                                <span className="text-gray-500">Capital Cost:</span>
-                                <span className="font-medium">
-                                  ${formatLargeNumber(newPlant.capacityMw * 1000 * (plantTemplates.find(t => t.plant_type === newPlant.plantType)?.overnight_cost_per_kw || 0))}
-                                </span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span className="text-gray-500">Construction:</span>
-                                <span className="font-medium">
-                                  {plantTemplates.find(t => t.plant_type === newPlant.plantType)?.construction_time_years} years
-                                </span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span className="text-gray-500">Fixed O&M:</span>
-                                <span className="font-medium">
-                                  ${formatLargeNumber(newPlant.capacityMw * 1000 * (plantTemplates.find(t => t.plant_type === newPlant.plantType)?.fixed_om_per_kw_year || 0))}/yr
-                                </span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span className="text-gray-500">Capacity Factor:</span>
-                                <span className="font-medium">
-                                  {((plantTemplates.find(t => t.plant_type === newPlant.plantType)?.capacity_factor_base || 0) * 100).toFixed(1)}%
-                                </span>
-                              </div>
+                          <div>
+                            <label htmlFor="plantType" className="block text-sm font-medium text-gray-700">
+                              Plant Type
+                            </label>
+                            <select
+                              id="plantType"
+                              value={newPlant.plantType}
+                              onChange={handlePlantTypeChange}
+                              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                              required
+                            >
+                              <option value="">Select plant type...</option>
+                              {plantTemplates.map(template => (
+                                <option key={template.plant_type} value={template.plant_type}>
+                                  {template.name} ({formatConstructionTime(template.construction_time_years)})
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+
+                          <div>
+                            <label htmlFor="capacity" className="block text-sm font-medium text-gray-700">
+                              Capacity (MW)
+                            </label>
+                            <input
+                              type="number"
+                              id="capacity"
+                              value={newPlant.capacityMw}
+                              onChange={(e) => setNewPlant({...newPlant, capacityMw: parseInt(e.target.value) || 0})}
+                              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                              min="1"
+                              max="2000"
+                              required
+                            />
+                          </div>
+
+                          <div className="grid grid-cols-3 gap-4">
+                            <div>
+                              <label htmlFor="constructionStart" className="block text-sm font-medium text-gray-700">
+                                Construction
+                              </label>
+                              <input
+                                type="number"
+                                id="constructionStart"
+                                value={newPlant.constructionStartYear}
+                                onChange={(e) => setNewPlant({...newPlant, constructionStartYear: parseInt(e.target.value) || new Date().getFullYear()})}
+                                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                                min="2020"
+                                required
+                              />
+                            </div>
+                            <div>
+                              <label htmlFor="commissioning" className="block text-sm font-medium text-gray-700">
+                                Commission
+                              </label>
+                              <input
+                                type="number"
+                                id="commissioning"
+                                value={newPlant.commissioning}
+                                onChange={(e) => setNewPlant({...newPlant, commissioning: parseInt(e.target.value) || 0})}
+                                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                                required
+                              />
+                            </div>
+                            <div>
+                              <label htmlFor="retirement" className="block text-sm font-medium text-gray-700">
+                                Retirement
+                              </label>
+                              <input
+                                type="number"
+                                id="retirement"
+                                value={newPlant.retirement}
+                                onChange={(e) => setNewPlant({...newPlant, retirement: parseInt(e.target.value) || 0})}
+                                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                                required
+                              />
                             </div>
                           </div>
-                        )}
-                      </form>
+
+                          {newPlant.plantType && plantTemplates.find(t => t.plant_type === newPlant.plantType) && (
+                            <div className="mt-2 p-3 bg-gray-50 rounded-lg text-sm">
+                              <h4 className="font-medium text-gray-900 mb-1">Plant Economics:</h4>
+                              <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+                                <div className="flex justify-between">
+                                  <span className="text-gray-500">Capital Cost:</span>
+                                  <span className="font-medium">
+                                    ${formatLargeNumber(newPlant.capacityMw * 1000 * (plantTemplates.find(t => t.plant_type === newPlant.plantType)?.overnight_cost_per_kw || 0))}
+                                  </span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-gray-500">Construction:</span>
+                                  <span className="font-medium">
+                                    {plantTemplates.find(t => t.plant_type === newPlant.plantType)?.construction_time_years} years
+                                  </span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-gray-500">Fixed O&M:</span>
+                                  <span className="font-medium">
+                                    ${formatLargeNumber(newPlant.capacityMw * 1000 * (plantTemplates.find(t => t.plant_type === newPlant.plantType)?.fixed_om_per_kw_year || 0))}/yr
+                                  </span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-gray-500">Capacity Factor:</span>
+                                  <span className="font-medium">
+                                    {((plantTemplates.find(t => t.plant_type === newPlant.plantType)?.capacity_factor_base || 0) * 100).toFixed(1)}%
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-              <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
-                <Button
-                  type="submit"
-                  onClick={handleCreatePlant}
-                  className="w-full sm:w-auto sm:ml-3"
-                >
-                  Build Plant
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  className="mt-3 w-full sm:mt-0 sm:w-auto"
-                  onClick={() => setIsNewPlantModalOpen(false)}
-                >
-                  Cancel
-                </Button>
-              </div>
+                <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                  <Button
+                    type="submit"
+                    className="w-full sm:w-auto sm:ml-3"
+                  >
+                    Build Plant
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="mt-3 w-full sm:mt-0 sm:w-auto"
+                    onClick={() => setIsNewPlantModalOpen(false)}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </form>
             </div>
           </div>
         </div>
