@@ -513,14 +513,15 @@ def main():
         print(f"\n🚀 Starting advanced market server on {args.host}:{args.port}...")
         
         if args.dev:
-            # Development mode with reload
+            # Development mode with reload, excluding node_modules
             uvicorn.run(
                 "startup:app",
                 host=args.host, 
                 port=args.port,
                 log_level="info",
                 reload=True,
-                reload_dirs=["."]
+                reload_dirs=["."],
+                reload_excludes=["node_modules", ".*"]
             )
         else:
             # Production mode

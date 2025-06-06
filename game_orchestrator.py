@@ -69,9 +69,10 @@ class YearlyGameFlowManager:
             
             # Get updated demand forecast
             demand_forecast = self._get_demand_forecast(year)
-            
-            # Get fuel price projections
-            fuel_prices = self._get_fuel_prices(year)
+            # Ensure all financial calculations produce finite numbers
+            annual_ebitda = min(max(annual_revenue_projection - annual_fixed_om, -1e12), 1e12)
+            annual_debt_service = min(debt_financing * 0.06, 1e12)  # 6% interest rate
+            annual_cash_flow = min(max(annual_ebitda - annual_debt_service, -1e12), 1e12)
             
             return {
                 "status": "year_planning_started",
