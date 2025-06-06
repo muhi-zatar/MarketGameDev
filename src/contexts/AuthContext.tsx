@@ -53,28 +53,31 @@ export function AuthProvider({ children }: AuthProviderProps) {
     setError(null);
     
     try {
-      // For development purposes, we'll use existing users from the sample data
-      // In a real app, you'd authenticate against the backend
-      let userId;
+      // For development purposes, create mock user data without API call
+      // This avoids the need for the backend to be running during development
+      let userData: User;
       
       if (userType === 'operator' && username === 'instructor') {
-        userId = 'operator_1';
+        userData = {
+          id: 'operator_1',
+          username: 'instructor',
+          userType: 'operator',
+          budget: 10000000000,
+          debt: 0,
+          equity: 10000000000
+        };
       } else if (userType === 'utility' && username.startsWith('utility_')) {
-        userId = username; // utility_1, utility_2, utility_3
+        userData = {
+          id: username,
+          username: username,
+          userType: 'utility',
+          budget: 2000000000,
+          debt: 0,
+          equity: 2000000000
+        };
       } else {
         throw new Error('Invalid credentials');
       }
-      
-      // Fetch user details
-      const response = await api.get(`/users/${userId}`);
-      const userData: User = {
-        id: response.data.id,
-        username: response.data.username,
-        userType: response.data.user_type as 'operator' | 'utility',
-        budget: response.data.budget,
-        debt: response.data.debt,
-        equity: response.data.equity
-      };
       
       setUser(userData);
       localStorage.setItem('user', JSON.stringify(userData));
@@ -98,18 +101,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
     setError(null);
     
     try {
-      const response = await api.post('/users', { 
-        username, 
-        user_type: userType 
-      });
-      
+      // For development, create mock user without API call
       const userData: User = {
-        id: response.data.id,
-        username: response.data.username,
-        userType: response.data.user_type as 'operator' | 'utility',
-        budget: response.data.budget,
-        debt: response.data.debt,
-        equity: response.data.equity
+        id: userType === 'operator' ? 'operator_new' : `utility_new_${Date.now()}`,
+        username: username,
+        userType: userType,
+        budget: userType === 'operator' ? 10000000000 : 2000000000,
+        debt: 0,
+        equity: userType === 'operator' ? 10000000000 : 2000000000
       };
       
       setUser(userData);
