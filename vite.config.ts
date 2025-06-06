@@ -16,6 +16,16 @@ export default defineConfig({
         target: 'http://localhost:8000',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, ''),
+        // Handle connection errors gracefully
+        configure: (proxy, options) => {
+          proxy.on('error', (err, req, res) => {
+            console.log('Proxy error:', err);
+            res.writeHead(500, {
+              'Content-Type': 'application/json',
+            });
+            res.end(JSON.stringify({ error: 'Proxy error', message: err.message }));
+          });
+        }
       },
     },
   },
